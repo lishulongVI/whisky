@@ -5,7 +5,6 @@
 """
 from pyquery import PyQuery as pq
 from urllib import request
-import re
 import os
 
 base_path = os.path.dirname(__file__)
