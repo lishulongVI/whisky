@@ -5,9 +5,9 @@
 """
 import base64
 
-print(base64.b64encode(b'http://www.086002.com/'))
-
 print()
+
+print(base64.b64decode(base64.b64encode(b'https://www.bdqunzu.com/')))
 import rsa
 
 # 生成密钥

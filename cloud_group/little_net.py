@@ -7,11 +7,12 @@
 from urllib import request
 from pyquery import PyQuery as pq
 import base64
+from threading import Thread
 
 #
 url = base64.b64decode('aHR0cDovL3d3dy4wODYwMDIuY29tLw==').decode('utf-8')
-
 cloud_url = base64.b64decode('aHR0cDovL3lpaGFvcXVuenUuY29tLw==').decode('utf-8')
+share_url = base64.b64decode('aHR0cHM6Ly93d3cuYmRxdW56dS5jb20v').decode('utf-8')
 
 
 def get_content(url):
@@ -28,7 +29,7 @@ def resolve_little(content):
     blocks = df('.block')
     for i in blocks.items():
         a = i('a').attr('href')
-        print(a)
+        print(a[1:] if a.find('享') >= 0 else a)
 
 
 def resolve_cloud(content):
@@ -43,5 +44,18 @@ def resolve_cloud(content):
                 print(d('a').attr('href'))
 
 
-resolve_little(get_content(url=url))
-# resolve_cloud(get_content(url=cloud_url))
+def resolve_share(content):
+    df = pq(content)
+    blocks = df('tr')
+    for i in blocks.items():
+        a = i('span').text().split(' ')[2]
+        print(a)
+
+
+if __name__ == '__main__':
+    Thread(target=resolve_little, args=(get_content(url=url),)).start()
+    Thread(target=resolve_cloud, args=(get_content(url=cloud_url),)).start()
+    Thread(target=resolve_share, args=(get_content(url=share_url),)).start()
+    # resolve_little()
+    # resolve_cloud(get_content(url=cloud_url))
+    # resolve_share(get_content(url=share_url))
