@@ -8,15 +8,22 @@ from urllib import request
 from pyquery import PyQuery as pq
 import base64
 from threading import Thread
+from queue import Queue
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36'
+}
 
 #
 url = base64.b64decode('aHR0cDovL3d3dy4wODYwMDIuY29tLw==').decode('utf-8')
 cloud_url = base64.b64decode('aHR0cDovL3lpaGFvcXVuenUuY29tLw==').decode('utf-8')
 share_url = base64.b64decode('aHR0cHM6Ly93d3cuYmRxdW56dS5jb20v').decode('utf-8')
 
-result1 = set()
-result2 = set()
-result3 = set()
+result1 = list()
+result2 = list()
+result3 = list()
+
+req_queue = Queue()
 
 
 def get_content(url):
@@ -33,19 +40,29 @@ def resolve_little(content):
     blocks = df('.block')
     for i in blocks.items():
         a = i('a').attr('href')
-        result1.add(a[1:] if a.find('享') >= 0 else a)
+        result1.append(a[1:] if a.find('享') >= 0 else a)
+
+
+def __multi(i):
+    a = i('a').attr('href')
+    if a is not None:
+        req = request.Request(url=a, headers=headers)
+        res = request.urlopen(req)
+        if res.status == 200:
+            d = pq(res.read().decode('utf-8'))('.topic-view')
+            result2.append(d('a').attr('href'))
 
 
 def resolve_cloud(content):
     df = pq(content)
     blocks = df('.title')
     for i in blocks.items():
-        a = i('a').attr('href')
-        if a is not None:
-            res = request.urlopen(a)
-            if res.status == 200:
-                d = pq(res.read().decode('utf-8'))('.topic-view')
-                result2.add(d('a').attr('href'))
+        a = Thread(target=__multi, args=(i,))
+        a.start()
+        req_queue.put(a)
+    while req_queue.qsize() > 0:
+        a = req_queue.get()
+        a.join()
 
 
 def resolve_share(content):
@@ -53,36 +70,32 @@ def resolve_share(content):
     blocks = df('tr')
     for i in blocks.items():
         a = i('span').text().split(' ')[2]
-        result3.add(a)
+        result3.append(a)
 
 
-def loop(result):
-    for i in result:
-        print(i)
+def top_6(result):
+    for i, v in enumerate(result):
+        if i < 6:
+            print(v)
+        else:
+            break
 
 
 if __name__ == '__main__':
     # Thread(target=resolve_little, args=(get_content(url=url),)).start()
     # Thread(target=resolve_cloud, args=(get_content(url=cloud_url),)).start()
     # Thread(target=resolve_share, args=(get_content(url=share_url),)).start()
+
+    resolve_cloud(get_content(url=cloud_url))
+
     print('*' * 10 + '第一渠道')
     resolve_little(get_content(url=url))
-    loop(result1)
-
-    print('*' * 10 + '第二渠道')
-    resolve_cloud(get_content(url=cloud_url))
-    loop(result2)
+    top_6(result1)
     print('*' * 10 + '第三渠道')
     resolve_share(get_content(url=share_url))
-
-    loop(result3)
-
-    result1.update(result2)
-    result1.update(result3)
-
-    print('*'*20+'all')
-    print(loop(result1))
-
+    top_6(result3)
+    print('*' * 10 + '第二渠道')
+    top_6(result2)
 
 
 
