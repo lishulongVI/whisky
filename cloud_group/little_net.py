@@ -9,6 +9,9 @@ from pyquery import PyQuery as pq
 import base64
 from threading import Thread
 from queue import Queue
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36'
@@ -27,7 +30,8 @@ req_queue = Queue()
 
 
 def get_content(url):
-    res = request.urlopen(url=url)
+    req = request.Request(url=url, headers=headers)
+    res = request.urlopen(url=req)
     if res.status == 200:
         content = res.read().decode('utf-8')
         return content
@@ -69,13 +73,13 @@ def resolve_share(content):
     df = pq(content)
     blocks = df('tr')
     for i in blocks.items():
-        a = i('span').text().split(' ')[2]
+        a = i('span').text().split(' ')[1]
         result3.append(a)
 
 
-def top_6(result):
+def top_N(result, N=5):
     for i, v in enumerate(result):
-        if i < 6:
+        if i < N:
             print(v)
         else:
             break
@@ -88,14 +92,17 @@ if __name__ == '__main__':
 
     resolve_cloud(get_content(url=cloud_url))
 
-    print('*' * 10 + '第一渠道')
     resolve_little(get_content(url=url))
-    top_6(result1)
-    print('*' * 10 + '第三渠道')
+
     resolve_share(get_content(url=share_url))
-    top_6(result3)
-    print('*' * 10 + '第二渠道')
-    top_6(result2)
+
+    print('*' * 10 + '第一渠道 ,长度：{}'.format(len(result1)))
+    top_N(result1)
+    print('*' * 10 + '第二渠道 ,长度：{}'.format(len(result2)))
+    top_N(result2)
+    print('*' * 10 + '第三渠道 ,长度：{}'.format(len(result3)))
+    top_N(result3)
+
 
 
 
