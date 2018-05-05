@@ -10,6 +10,8 @@ import base64
 from threading import Thread
 from queue import Queue
 import ssl
+import copy
+import time
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -77,7 +79,7 @@ def resolve_share(content):
         result3.append(a)
 
 
-def top_N(result, N=5):
+def top_N(result, N=100):
     for i, v in enumerate(result):
         if i < N:
             print(v)
@@ -85,23 +87,43 @@ def top_N(result, N=5):
             break
 
 
-if __name__ == '__main__':
-    # Thread(target=resolve_little, args=(get_content(url=url),)).start()
-    # Thread(target=resolve_cloud, args=(get_content(url=cloud_url),)).start()
-    # Thread(target=resolve_share, args=(get_content(url=share_url),)).start()
-
+def rewrite():
     resolve_cloud(get_content(url=cloud_url))
 
     resolve_little(get_content(url=url))
 
     resolve_share(get_content(url=share_url))
 
-    print('*' * 10 + '第一渠道 ,长度：{}'.format(len(result1)))
-    top_N(result1)
-    print('*' * 10 + '第二渠道 ,长度：{}'.format(len(result2)))
-    top_N(result2)
-    print('*' * 10 + '第三渠道 ,长度：{}'.format(len(result3)))
-    top_N(result3)
+
+if __name__ == '__main__':
+    # Thread(target=resolve_little, args=(get_content(url=url),)).start()
+    # Thread(target=resolve_cloud, args=(get_content(url=cloud_url),)).start()
+    # Thread(target=resolve_share, args=(get_content(url=share_url),)).start()
+
+
+
+    while True:
+        rewrite()
+        res1 = copy.deepcopy(result1)
+        res2 = copy.deepcopy(result2)
+        res3 = copy.deepcopy(result3)
+        res1.extend(res2)
+        res1.extend(res3)
+        time.sleep(2)
+        rewrite()
+        result1.extend(result3)
+        result1.extend(result2)
+        retD = list(set(result1).difference(set(res1)))
+
+        print('*' * 10 + '第一渠道 ,长度：{}'.format(len(retD)))
+        top_N(retD, 5)
+
+        result1 = list()
+        result2 = list()
+        result3 = list()
+
+
+
 
 
 
