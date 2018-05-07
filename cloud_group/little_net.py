@@ -37,7 +37,7 @@ req_queue = Queue()
 
 
 def get_content(url):
-    req = request.Request(url=url, headers=headers)
+    req = request.Request(url=url, headers=headers, method='GET')
     res = request.urlopen(url=req)
     if res.status == 200:
         content = res.read().decode('utf-8')
@@ -57,7 +57,7 @@ def resolve_little(content):
 def __multi(i):
     a = i('a').attr('href')
     if a is not None:
-        req = request.Request(url=a, headers=headers)
+        req = request.Request(url=a, headers=headers, method='GET')
         res = request.urlopen(req)
         if res.status == 200:
             d = pq(res.read().decode('utf-8'))('.topic-view')
