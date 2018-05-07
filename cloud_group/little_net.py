@@ -2,6 +2,9 @@
 """
 @contact: lishulong.never@gmail.com
 @time: 2018/4/6 上午11:34
+
+@TODO : pyinstaller -F -w -i manage.icoi little_net.py
+
 """
 
 from urllib import request
@@ -12,6 +15,8 @@ from queue import Queue
 import ssl
 import copy
 import time
+
+from multiprocessing.pool import ThreadPool
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -87,12 +92,18 @@ def top_N(result, N=100):
             break
 
 
+pool = ThreadPool(3)
+
+
 def rewrite():
-    resolve_cloud(get_content(url=cloud_url))
+    # resolve_cloud(get_content(url=cloud_url))
+    # resolve_little(get_content(url=url))
+    #
+    # resolve_share(get_content(url=share_url))
 
-    resolve_little(get_content(url=url))
-
-    resolve_share(get_content(url=share_url))
+    pool.map(resolve_cloud, [get_content(url=cloud_url)])
+    pool.map(resolve_little, [get_content(url=url)])
+    pool.map(resolve_share, [get_content(url=share_url)])
 
 
 if __name__ == '__main__':
@@ -100,9 +111,8 @@ if __name__ == '__main__':
     # Thread(target=resolve_cloud, args=(get_content(url=cloud_url),)).start()
     # Thread(target=resolve_share, args=(get_content(url=share_url),)).start()
 
-
-
     while True:
+        print('解析第一渠道，请稍等.....')
         rewrite()
         res1 = copy.deepcopy(result1)
         res2 = copy.deepcopy(result2)
@@ -110,13 +120,16 @@ if __name__ == '__main__':
         res1.extend(res2)
         res1.extend(res3)
         time.sleep(2)
+        print('解析第二渠道，请稍等.....')
         rewrite()
         result1.extend(result3)
         result1.extend(result2)
         retD = list(set(result1).difference(set(res1)))
 
-        print('*' * 10 + '第一渠道 ,长度：{}'.format(len(retD)))
+        print('*' * 10 + '解析出可用链接长度：{}'.format(len(retD)))
         top_N(retD, 5)
+        print('*' * 10 + '解析出可能失效链接长度：{}'.format(len(result1)))
+        top_N(result1, 5)
 
         result1 = list()
         result2 = list()
